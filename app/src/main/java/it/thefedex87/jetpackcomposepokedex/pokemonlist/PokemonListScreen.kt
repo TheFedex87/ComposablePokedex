@@ -12,8 +12,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -35,11 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import coil.request.ImageRequest
-import com.google.accompanist.coil.CoilImage
+import coil.ImageLoader
+import coil.compose.ImagePainter
+import coil.compose.rememberImagePainter
 import it.thefedex87.jetpackcomposepokedex.R
 import it.thefedex87.jetpackcomposepokedex.data.models.PokedexListEntry
-import it.thefedex87.jetpackcomposepokedex.data.remote.responses.PokemonList
 import it.thefedex87.jetpackcomposepokedex.ui.theme.RobotoCondensed
 
 @Composable
@@ -138,7 +135,7 @@ fun PokemonList(
         }
 
         items(itemCount) {
-            if(it >= itemCount - 1 && !endReached) {
+            if (it >= itemCount - 1 && !endReached) {
                 viewModel.loadPokemonPaginated()
             }
             PokedexRow(
@@ -183,26 +180,31 @@ fun PokedexEntry(
             }
     ) {
         Column {
-            CoilImage(
-                request = ImageRequest
-                    .Builder(LocalContext.current)
-                    .data(entry.imageUrl)
-                    .target {
-                        viewModel.calcDominantColor(it) { color ->
-                            dominatorColor = color
-                        }
-                    }.build(),
+            val image = rememberImagePainter(data = entry.imageUrl,
+                builder = {
+                    crossfade(true)
+                }
+            )
+            (image.state as? ImagePainter.State.Success)?.let { successState ->
+                viewModel.calcDominantColor(successState.result.drawable) { color ->
+                    dominatorColor = color
+                }
+            }
+
+            Image(
+                painter = image,
                 contentDescription = entry.pokemonName,
-                fadeIn = true,
                 modifier = Modifier
                     .size(120.dp)
                     .align(CenterHorizontally)
-            ) {
+            )
+            if (image.state !is ImagePainter.State.Success) {
                 CircularProgressIndicator(
                     color = MaterialTheme.colors.primary,
-                    modifier = Modifier.scale(0.5f)
+                    modifier = Modifier.scale(0.5f).align(CenterHorizontally)
                 )
             }
+
             Text(
                 text = entry.pokemonName, fontFamily = RobotoCondensed,
                 fontSize = 12.sp,

@@ -59,6 +59,7 @@ fun PokemonListScreen(
             )
             SearchBar(
                 hint = "Search...",
+                query = viewModel.searchQuery.value,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -75,10 +76,11 @@ fun PokemonListScreen(
 fun SearchBar(
     modifier: Modifier = Modifier,
     hint: String = "",
+    query: String = "",
     onSearch: (String) -> Unit = {},
 ) {
     var text by remember {
-        mutableStateOf("")
+        mutableStateOf(query)
     }
     var isHintDisplayed by remember {
         mutableStateOf(hint != "")
@@ -143,7 +145,9 @@ fun PokemonList(
 
         items(itemCount) {
             if (it >= itemCount - 1 && !endReached && !isLoading && !isSearching) {
-                viewModel.loadPokemonPaginated()
+                LaunchedEffect(key1 = true) {
+                    viewModel.loadPokemonPaginated()
+                }
             }
             PokedexRow(
                 rowIndex = it,
